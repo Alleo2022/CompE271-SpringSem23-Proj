@@ -1,9 +1,10 @@
-# Author:	Anna Leonhardt
-# Date:	March 2, 2023
 
-.data			# add this stuff to the data segment
+# Author: Anna Leonhardt
+# Date:	  March 2, 2023
 
-			# load the hello string into data memory
+.data			# add this to the data segment
+			    # load the hello string into data memory
+
 controlLoadS:		.asciiz "                 CROSSY-MAN\n\nPress 'c' on keyboard and enter to see the controls\nPress 'p' on keyboard and enter to play the game\n\n"
 controlC:		.asciiz "\n     In-Game Controls\n"
 controle:		.asciiz "Press 'e' to end the game\n" 
@@ -83,7 +84,6 @@ main:
 	conditionNotMet: 
 		beq $t0, 'p', gameStart	
 		beq $t0, 'e', exit		# if the user input is not equal to e, controlMenu is displayed. If user input = e, jump to exit
-	
 	
 	
 	#controls page	
