@@ -1,8 +1,9 @@
 /*
+  ============================================================================
  * GameFunctions.h
- *
- *  Created on: Mar 2, 2023
- *      Author: Anna Leonhardt
+ * Created on: Mar 2, 2023
+ * Author: Anna Leonhardt
+  ============================================================================
  */
 
 #ifndef GAMEFUNCTIONS_H_
