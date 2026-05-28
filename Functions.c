@@ -1,8 +1,9 @@
 /*
- * Functions.c
- *
- *  Created on: Mar 2, 2023
- *      Author: Anna Leonhardt
+============================================================================
+ Functions.c
+ Created on: Mar 2, 2023
+ Author: Anna Leonhardt
+============================================================================
  */
 #include "GameFunctions.h"
 #include <stdio.h>
