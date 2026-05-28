@@ -5,7 +5,6 @@
  Version     : 2.0
  Copyright   : Your copyright notice
  Description : Initial C coded version of a Crossy Road, Pac-Man mashup game.
-
  ============================================================================
  */
 #include "GameFunctions.h"
