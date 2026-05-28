@@ -1,0 +1,496 @@
+# Author:	Anna Leonhardt
+# Date:	March 2, 2023
+
+.data			# add this stuff to the data segment
+
+			# load the hello string into data memory
+controlLoadS:		.asciiz "                 CROSSY-MAN\n\nPress 'c' on keyboard and enter to see the controls\nPress 'p' on keyboard and enter to play the game\n\n"
+controlC:		.asciiz "\n     In-Game Controls\n"
+controle:		.asciiz "Press 'e' to end the game\n" 
+controlw:		.asciiz "Press 'w' to move forward\n" 
+controla:		.asciiz "Press 'a' to move left\n"
+controls:		.asciiz "Press 's' to move backward\n"
+controld:		.asciiz "Press 'd' to move right\n\n"
+controlmenu:		.asciiz "Press 'm' to return to the main menu\n\n"
+gameGoal: 		.asciiz "\n\nAvoid the roadblocks and earn 25 points to win!\nFall off the map and you lose :(\nGood Luck!\n [ Press 'p' again to play ]\n"
+exitgame: 		.asciiz "\nGoodbye\n"
+counter: 		.asciiz "\nPoints: "
+finalScore: 		.asciiz "\nFinal Score: "
+newLine: 		.asciiz "\n"
+counterInt: 		.word 0	#initializes the counter to 0
+counterAdd: 		.word 1	#Sets the number to be added to the counter when user moves forward to 1
+counterUpdate:		.word 0	#Sets the space for updating the counter to 0
+winCount: 		.word 24	#sets the winning score condition to 25
+winStatement: 		.asciiz "\nYou Won!\n"
+playAgainStatement:	.asciiz "Would you like to play again? \n Press 'y' to play again and 'n' to exit\n"
+ 
+		.eqv Domain 50		#sets the domain to 50 
+		.eqv Range 20		#sets the range to 20
+
+#code to create the game array for the user interface
+.align 2
+
+	TdArray:
+	
+		.byte '_' : 50		#fills the array with the character - for 50 columns and 20 rows
+		.byte '_' : 50
+		.byte '_' : 50
+		.byte '_' : 50
+		.byte '_' : 50
+		.byte '_' : 50
+		.byte '_' : 50
+		.byte '_' : 50
+		.byte '_' : 50
+		.byte '_' : 50
+		.byte '_' : 50
+		.byte '_' : 50
+		.byte '_' : 50
+		.byte '_' : 50
+		.byte '_' : 50
+		.byte '_' : 50
+		.byte '_' : 50
+		.byte '_' : 50
+		.byte '_' : 50
+		.byte '_' : 50
+
+.text              			# start of code segment, splits the define/initializing from main code
+
+	addi $s0, $0, 10		#initializes $s0 to 0 (Domain)
+	addi $s1, $0, 10		#initializes $s1 to 0 (Range)
+	
+#main menu
+menu:
+
+	li   $v0, 4	    		# set up print controlLoadS syscall
+	la   $a0, controlLoadS		# argument to print controlLoadS
+	syscall		   		# tell the OS to do the syscall
+		
+
+#   Loop here to read the input and display either 'c' or 'p' controls
+
+#main page
+main:	
+		
+		li $v0, 12			#takes user input
+		syscall				# tell the OS to do take input
+		move $t0, $v0			#moves the user input into temporary 0
+		
+	
+	bne $t0, 'c', conditionNotMet	# If user input = c, display control menu
+ 	jal controlMenu
+ 	j main
+ 	
+	conditionNotMet: 
+		beq $t0, 'p', gameStart	
+		beq $t0, 'e', exit		# if the user input is not equal to e, controlMenu is displayed. If user input = e, jump to exit
+	
+	
+	
+	#controls page	
+controlMenu:
+	
+#Display Title	
+	li   $v0, 4	    		# set up print controlC syscall
+	la   $a0, controlC		# argument to print controlC
+	syscall		    		# tell the OS to do the syscall
+	
+#Display exit control 	
+	li   $v0, 4	   
+	la   $a0, controle		# argument to print controle
+	syscall	
+		    
+#Display control to move forward		
+	li   $v0, 4	    		# set up print controlw syscall
+	la   $a0, controlw		# argument to print controlw
+	syscall		    		# tell the OS to do the syscall
+
+#Display control to move left
+	li   $v0, 4	    		# set up print controla syscall
+	la   $a0, controla		# argument to print controla
+	syscall		    		# tell the OS to do the syscall
+
+#Display control to move right
+	li   $v0, 4	    		# set up print controls syscall
+	la   $a0, controls		# argument to print controls
+	syscall		    		# tell the OS to do the syscall
+
+#Display control to move backward
+	li   $v0, 4	    		# set up print controld syscall
+	la   $a0, controld		# argument to print controld
+	syscall		    		# tell the OS to do the syscall
+
+#Display control on how to return to main	
+	li   $v0, 4	    		# set up print controlmenu syscall
+	la   $a0, controlmenu		# argument to print controlmen
+	syscall		    		# tell the OS to do the syscall
+
+	li $v0, 12			#takes user input
+	syscall				# tell the OS to do take input
+	move $t0, $v0			#moves the user input into temporary 0
+	beq $t0, 'm', menu		# If user input = m, display main menu
+	beq $t0, 'e', exit		# If user input = e, exit the game
+	beq $t0, 'p', gameStart	# If user input = p, display the game grid
+
+	gameStart:
+		li   $v0, 4	    	# set up print controlLoadS syscall
+		la   $a0, gameGoal	# argument to print gameGoal
+		syscall		    	# tell the OS to do the syscall	
+		jal game
+game:	
+
+	li $v0, 12			#takes user input
+	syscall				# tell the OS to do take input
+	move $t0, $v0			#moves the user input into temporary 0
+	
+# initialize counter
+	lw $t1, counterInt		#initializes the counter and sets into temp 1
+	lw $t4, counterAdd		#sets the counter to add 1 and loads into temp 4
+	sw $t1, counterUpdate	#temporarily stores the updated counter into temp 1
+	
+	insideGame:
+
+		li   $v0, 4	    	# set up print controlLoadS syscall
+		la $a0, counter
+		syscall		    	# tell the OS to do the syscall
+	
+	
+		move $a0, $t1    
+		li $v0, 1        	# call number = print integer
+		syscall			# print integer ( $a0 )
+
+#prints new line
+		li   $v0, 4	    	# set up print controlLoadS syscall
+		la $a0, newLine
+		syscall		    	# tell the OS to do the syscall
+				
+# MIPS assembly code to create a 2D array	
+		addi $s1, $0, 47	#initializes $s0 to 0 (Domain)
+		addi $s0, $0, 32	#initializes $s1 to 0 (Range)
+		jal getAddress		#jumps to getAddress function loop
+		
+		move $t5 ,$v0		# $t5 is unused from counter, so $v0 is temporarily stored there		
+		la $a1, 'O'		# loads the user character O into address register $a1
+		sb $a1, ($t5)		# stores the byte value of $a1 into $t4		
+		
+#adds barrier No.1
+		addi $s1, $0, 0	#initializes $s0 to 0 (Domain)
+		addi $s0, $0, 4	#initializes $s1 to 0 (Range)
+		jal getAddress		#jumps to getAddress function loop
+		
+		move $t5 ,$v0		# $t5 is unused from counter, so $v0 is temporarily stored there		
+		la $a3, 'X'		# loads the user character O into address register $a1
+		sb $a3, ($t5)		# stores the byte value of $a1 into $t4
+		
+#adds barrier No.2
+		addi $s1, $0, 1	#initializes $s0 to 0 (Domain)
+		addi $s0, $0, 25	#initializes $s1 to 0 (Range)
+		jal getAddress		#jumps to getAddress function loop
+		
+		move $t5 ,$v0		# $t4 is unused from counter, so $v0 is temporarily stored there		
+		la $a3, 'X'		# loads the user character O into address register $a1
+		sb $a3, ($t5)		# stores the byte value of $a1 into $t4
+		
+#adds barrier No.3
+		addi $s1, $0, 5	#initializes $s0 to 0 (Domain)
+		addi $s0, $0, 13	#initializes $s1 to 0 (Range)
+		jal getAddress		#jumps to getAddress function loop
+		
+		move $t5 ,$v0		# $t4 is unused from counter, so $v0 is temporarily stored there		
+		la $a3, 'X'		# loads the user character O into address register $a1
+		sb $a3, ($t5)		# stores the byte value of $a1 into $t4
+		
+#adds barrier No.4
+		addi $s1, $0, 10	#initializes $s0 to 0 (Domain)
+		addi $s0, $0, 6	#initializes $s1 to 0 (Range)
+		jal getAddress		#jumps to getAddress function loop
+		
+		move $t5 ,$v0		# $t4 is unused from counter, so $v0 is temporarily stored there		
+		la $a3, 'X'		# loads the user character O into address register $a1
+		sb $a3, ($t5)		# stores the byte value of $a1 into $t4
+		
+#adds barrier No.5
+		addi $s1, $0, 9	#initializes $s0 to 0 (Domain)
+		addi $s0, $0, 25	#initializes $s1 to 0 (Range)
+		jal getAddress		#jumps to getAddress function loop
+		
+		move $t5 ,$v0		# $t4 is unused from counter, so $v0 is temporarily stored there		
+		la $a3, 'X'		# loads the user character O into address register $a1
+		sb $a3, ($t5)		# stores the byte value of $a1 into $t4
+		
+#adds barrier No.6
+		addi $s1, $0, 12	#initializes $s0 to 0 (Domain)
+		addi $s0, $0, 43	#initializes $s1 to 0 (Range)
+		jal getAddress		#jumps to getAddress function loop
+		
+		move $t5 ,$v0		# $t4 is unused from counter, so $v0 is temporarily stored there		
+		la $a3, 'X'		# loads the user character O into address register $a1
+		sb $a3, ($t5)		# stores the byte value of $a1 into $t4
+		
+#adds barrier No.7
+		addi $s1, $0, 15	#initializes $s0 to 0 (Domain)
+		addi $s0, $0, 5	#initializes $s1 to 0 (Range)
+		jal getAddress		#jumps to getAddress function loop
+		
+		move $t5 ,$v0		# $t4 is unused from counter, so $v0 is temporarily stored there		
+		la $a3, 'X'		# loads the user character O into address register $a1
+		sb $a3, ($t5)		# stores the byte value of $a1 into $t4
+		
+#adds barrier No.8
+		addi $s1, $0, 16	#initializes $s0 to 0 (Domain)
+		addi $s0, $0, 22	#initializes $s1 to 0 (Range)
+		jal getAddress		#jumps to getAddress function loop
+		
+		move $t5 ,$v0		# $t4 is unused from counter, so $v0 is temporarily stored there		
+		la $a3, 'X'		# loads the user character O into address register $a1
+		sb $a3, ($t5)		# stores the byte value of $a1 into $t4
+		
+#adds barrier No.9
+		addi $s1, $0, 18	#initializes $s0 to 0 (Domain)
+		addi $s0, $0, 30	#initializes $s1 to 0 (Range)
+		jal getAddress		#jumps to getAddress function loop
+		
+		move $t5 ,$v0		# $t4 is unused from counter, so $v0 is temporarily stored there		
+		la $a3, 'X'		# loads the user character O into address register $a1
+		sb $a3, ($t5)		# stores the byte value of $a1 into $t4
+		
+#adds barrier No.10
+		addi $s1, $0, 19	#initializes $s0 to 0 (Domain)
+		addi $s0, $0, 5	#initializes $s1 to 0 (Range)
+		jal getAddress		#jumps to getAddress function loop
+		
+		move $t5 ,$v0		# $t4 is unused from counter, so $v0 is temporarily stored there		
+		la $a3, 'X'		# loads the user character O into address register $a1
+		sb $a3, ($t5)		# stores the byte value of $a1 into $t4
+		
+		
+		printArray:
+		
+			li $t9, 0				#initializes the array to 0
+			la $t8, TdArray
+
+			iLoop:
+				bge $t9, Range, exitILoop	#when the branch is greater than or equal to the set range, the loop jumps to the exitILoop
+				li $t7, 0
+
+			jLoop:
+				bge $t7, Domain, exitJLoop	#when the branch is greater than or equal to the set domain, the loop jumps to the exitJLoop
+				mul $t5, $t9, Domain
+				add $t5, $t5, $t7
+				add $t5, $t8, $t5
+
+				li $v0, 11
+				lb $t5, ($t5)
+				la $a0, ($t5)
+				syscall
+
+				add $t7, $t7, 1
+				
+				j jLoop			#jumps to the inner loop
+
+			exitJLoop:			#conditional loop to exit the inner loop of the overall loop
+				add $t9, $t9, 1
+
+				li $v0, 11
+				la $a0, '\n'		#prints a new line after the array is printed
+				syscall
+
+				j iLoop			#jumps to the outer loop
+
+			exitILoop:
+				li $v0, 12		#takes user input
+				syscall			# tell the OS to do take input
+				move $t0, $v0		#moves the user input into temporary 1
+				
+				addi $sp, $sp, 4	#saves space on the stack for storing $ra register
+				sw $ra, 0($sp)	#stores $ra
+				
+				jal movecondition	# jumps to the movecondition function to check user input and move to next function	
+				
+				lw $ra, 0($sp)		#loads $ra stack space 
+				addi $sp, $sp, 4	#returns $ra saved stack space
+				
+				jr $ra			#ends the function
+getAddress:
+
+	la $t8, TdArray
+	move $t9, $s1			#moves column address into $s1 register
+	move $t7, $s0			#moves row address into $s0 register
+	
+	mul $t5, $t9, Domain		# RANGE *current column $t9
+	add $t5, $t5, $t7		# $t5 + current row 
+	add $t5, $t8, $t5		# $t5 + base address
+	
+	move $v0, $t5
+	jr $ra				# exits function
+	
+	
+forward:
+
+	add $t1, $t1, $t4
+	sw $t1, counterUpdate
+	move $a0, $t1			#updates counter into $t1
+	beq $t1, 25 , winGame	# If count = 50, go to winGame loop
+	
+	addi $s1, $s1, -1		#swaps right
+	
+	forwardSwap:
+		
+	beq $s1, Range, backToGameF	# if the stored value in $s0 does not equal the DOMAIN, jump to backToGameF function
+#swapFunction:
+
+			jal getAddress
+
+			la $a2, '_'			# loads the user character '_' into address register $a1
+			sb $a2, ($t5)			# stores the byte value of $a1 into $t4
+
+			addi $t5, $t5, +1		#swaps forward 1
+		
+			jal getAddress		 	# jumps to gatAddress loop function
+	
+			move $t5 ,$v0			# $t5 is unused from counter, so $ra is temporarily stored there		
+			la $a2, 'O'			# loads the user character O into address register $a1
+			sb $a2, ($t5)			# stores the byte value of $a1 into $t4
+			
+			addi $t5, $t5, +1		#swaps forward 1
+	
+		backToGameF:
+			jal insideGame
+	
+
+left: 
+	#printCounter
+	sw $t0, counter       # Store updated counter value back into memory
+	move $t6, $t1         # Copy $t0 (counter) into $t2 for printing
+	syscall               	# Print updated counter value
+	
+	
+	li $v0, 12		#takes user input
+	syscall			# tell the OS to do take input
+	move $t0, $v0		#moves the user input into temporary 1
+	
+	bne $s0, 0, backToGameL
+	
+		jal getAddress
+		la $a2, '_'			# loads the user character '_' into address register $a1
+		sb $a2, ($t5)			# stores the byte value of $a1 into $t4
+
+		addi $s0, $s0, -1		#swaps right
+		
+		jal getAddress		 	# jumps to gatAddress loop function
+	
+		move $t5 ,$v0			# $t4 is unused from counter, so $ra is temporarily stored there		
+		la $a2, 'O'			# loads the user character O into address register $a1
+		sb $a2, ($t5)			# stores the byte value of $a1 into $t4
+	
+		backToGameL:
+			jal insideGame
+	
+back:
+	#printCounter
+	sw $t1, counter	# Store updated counter value back into memory
+	move $t6, $t1		# Copy $t0 (counter) into $t2 for printing
+	syscall			# Print updated counter value
+	
+	
+	li $v0, 12		#takes user input
+	syscall			# tell the OS to do take input
+	move $t0, $v0		#moves the user input into temporary 1
+	
+	bne $s0, 0, backToGameB
+			
+		jal getAddress
+		la $a2, '_'			# loads the user character '_' into address register $a1
+		sb $a2, ($t5)			# stores the byte value of $a1 into $t4
+
+		addi $s0, $s0, -1		#swaps right
+		
+		jal getAddress		 	# jumps to gatAddress loop function
+	
+		move $t5 ,$v0			# $t4 is unused from counter, so $ra is temporarily stored there		
+		la $a2, 'O'			# loads the user character O into address register $a1
+		sb $a2, ($t5)			# stores the byte value of $a1 into $t4
+	
+		 backToGameB:
+			jal insideGame
+	
+right: 
+	#printCounter
+	sw $t0, counter	# Store updated counter value back into memory
+	move $t6, $t1		# Copy $t0 (counter) into $t2 for printing
+	syscall			# Print updated counter value
+	
+	li $v0, 12		#takes user input
+	syscall			# tell the OS to do take input
+	move $t0, $v0		#moves the user input into temporary 1
+	
+		jal getAddress
+		la $a2, '_'			# loads the user character O into address register $a1
+		sb $a2, ($t5)			# stores the byte value of $a1 into $t4
+
+		addi $s0, $s0, +1		#swaps right
+		
+		jal getAddress		 	# jumps to gatAddress loop function
+	
+		move $t5 ,$v0			# $t4 is unused from counter, so $ra is temporarily stored there		
+		la $a2, 'O'			# loads the user character O into address register $a1
+		sb $a2, ($t5)			# stores the byte value of $a1 into $t4
+
+#conditions for updating the printed array
+movecondition:
+	bne $t0, 'w', checkA	 #if the user input does not equal w, jump to checkA
+	j forward		 #if user input is equal to w, jump to forward condition
+	
+	checkA:
+	bne $t0, 'a', checkS	#if the user input does not equal a, jump to checkS
+	j left			#if user input is equal to a, jump to left condition
+	
+	checkS:
+	bne $t0, 's', checkD	 #if the user input does not equal s, jump to checkD
+	j back			 #if user input is equal to s, jump to back condition
+	
+	checkD:
+	beq $t0, 'd', right	 #if the user input does not equal d, jump to the right move function
+	
+winGame:
+
+		li   $v0, 4	    			# set up print controlLoadS syscall
+		la $a0, finalScore
+		syscall		    			# tell the OS to do the syscall
+		
+		move $a0, $t1    
+		li $v0, 1         			# call number = print integer
+		syscall          		 		# print integer ( $a0 )
+
+		li   $v0, 4	    			# set up print controlLoadS syscall
+		la   $a0, winStatement		# argument to print gameGoal
+		syscall		    			# tell the OS to do the syscall
+		
+		li   $v0, 4	    			# set up print controlLoadS syscall
+		la   $a0, playAgainStatement		# argument to print gameGoal
+		syscall		    			# tell the OS to do the syscall
+		
+		li $v0, 12				#takes user input
+		syscall					# tell the OS to do take input
+		move $t1, $v0				#moves the user input into temporary 1
+		
+	bne $t1, 'e', inputCondNotMet		# If user input = y, display the game
+ 	jal exit
+ 	
+	inputCondNotMet: 
+		beq $t1, 'y', game	# if the user input is not equal to e, controlMenu is displayed. If user input = e, jump to exit
+
+exit: 
+	li   $v0, 4	    		# set up to print the final score 
+	la $a0, finalScore
+	syscall		    		# tell the OS to do the syscall
+		
+	move $a0, $t1    
+	li $v0, 1        		# call number = print integer
+	syscall          	 		# print integer ( $a0 )
+
+	li $v0, 4			#condition to print the exit message
+	la $a0, exitgame		#prints the exit message
+	syscall
+
+	li   $v0, 10			# set up exit syscall
+	syscall				# tell the OS to do the syscall	
